@@ -8,6 +8,7 @@
 #include <linux/tls.h>
 
 #define WC_NO_HARDEN
+#define HAVE_SNI
 #include <wolfssl/ssl.h>
 
 #define SERVER_PORT     4433
@@ -62,6 +63,15 @@ static int create_socket(char *server_ip, int port)
 	}
 
 	return sockfd;
+}
+
+int verify_cb(int preverify, WOLFSSL_X509_STORE_CTX* store)
+{
+	printf("In verify CB, allowing\n");
+	(void)preverify;
+	(void)store;
+
+	return 1;
 }
 
 int config_ktls(int sockfd, WOLFSSL *ssl)
@@ -429,11 +439,16 @@ static void echoclient(void)
 	method = wolfSSLv23_client_method();
 	ctx    = wolfSSL_CTX_new(method);
 
-	if (wolfSSL_CTX_load_verify_locations(ctx, SERVER_CA_FILE, 0) !=
-	    WOLFSSL_SUCCESS) {
-		printf("ERROR: can't load server CA file\n");
-		goto end_ctx;
-	}
+	// if (wolfSSL_CTX_load_verify_locations(ctx, SERVER_CA_FILE, 0) !=
+	//     WOLFSSL_SUCCESS) {
+	// 	printf("ERROR: can't load server CA file\n");
+	// 	goto end_ctx;
+	// }
+
+	char *sni = "poppy-rust.fly.dev";
+	wolfSSL_CTX_UseSNI(ctx, WOLFSSL_SNI_HOST_NAME, sni, strlen(sni));
+
+	wolfSSL_CTX_set_verify(ctx, WOLFSSL_VERIFY_PEER, verify_cb);
 
 	ssl = wolfSSL_new(ctx);
 	if (ssl == NULL) {
@@ -550,6 +565,8 @@ cmd);
 
 int main(int argc, char *argv[])
 {
+	// wolfSSL_Debugging_ON();
+
 	int option;
 	time_t t;
 

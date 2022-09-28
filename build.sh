@@ -50,6 +50,8 @@ build_wolfssl()
     ./configure --enable-atomicuser \
                 --disable-examples \
                 --disable-oldtls \
+                --enable-debug \
+                --enable-sni \
                 $TLS12 \
                 $TLS13 \
                 --enable-shared=no \
